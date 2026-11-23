@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Customer Care - Creator Portal{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Top Welcome & Metric Stats -->
+    <div class="col-12">
+        <div class="card bg-white p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center">
+                <div>
+                    <h2 class="h3 fw-bold mb-1">
+                        <i class="fa-solid fa-headset text-primary me-2"></i> Creator Customer Care
+                    </h2>
+                    <p class="text-secondary mb-0">
+                        Welcome, <strong>{{ creator.full_name }}</strong> ({{ creator.username }})
+                        {% if creator.channel_or_app_name %} | <span class="badge bg-light text-dark border">{{ creator.channel_or_app_name }}</span>{% endif %}
+                    </p>
+                </div>
+                <div class="d-flex gap-3 mt-3 mt-md-0">
+                    <div class="border rounded px-3 py-2 text-center bg-light">
+                        <div class="small text-muted">Total Submitted</div>
+                        <div class="h4 fw-bold mb-0 text-dark">{{ total_issues }}</div>
+                    </div>
+                    <div class="border rounded px-3 py-2 text-center bg-light">
+                        <div class="small text-muted">Pending/Open</div>
+                        <div class="h4 fw-bold mb-0 text-danger">{{ open_issues }}</div>
+                    </div>
+                    <div class="border rounded px-3 py-2 text-center bg-light">
+                        <div class="small text-muted">Resolved</div>
+                        <div class="h4 fw-bold mb-0 text-success">{{ resolved_issues }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Left Column: Submit New Issue Form -->
+    <div class="col-lg-5">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 fw-bold">
+                    <i class="fa-solid fa-circle-plus text-primary me-2"></i> Report App Issue
+                </h5>
+                <small class="text-muted">Report platform issues only (product links, site builder, login, upload, bargain)</small>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" id="issueForm">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">App Area <span class="text-danger">*</span></label>
+                        <select name="app_area" id="id_app_area" class="form-select" required>
+                            <option value="" disabled selected>Select affected app area...</option>
+                            {% for area in app_areas %}
+                                <option value="{{ area }}">{{ area }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Description <span class="text-danger">*</span></label>
+                        <textarea name="description" id="id_description" rows="4" maxlength="2000" class="form-control" placeholder="Describe what happened with the app (e.g. link not opening, style not saving)..." required></textarea>
+                        <div class="form-text small text-muted">Maximum 2,000 characters.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Product Name <span class="text-muted fw-normal">(Optional)</span></label>
+                        <input type="text" name="product_name" id="id_product_name" class="form-control" placeholder="e.g. Handmade Ceramic Mug">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Issue Title <span class="text-muted fw-normal">(Optional, defaults to first 60 characters)</span></label>
+                        <input type="text" name="title" id="id_title" class="form-control" placeholder="Brief summary of the issue">
+                    </div>
+
+                    <!-- Platform Context Fields Block -->
+                    {% if demo_mode %}
+                        <div class="card bg-light border p-3 mb-4 rounded-3">
+                            <h6 class="fw-bold text-dark mb-2 small">
+                                <i class="fa-solid fa-sliders text-primary me-1"></i> Platform details (auto-filled in the real platform)
+                            </h6>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label small mb-1 fw-semibold">Link Status</label>
+                                    <select name="link_status" class="form-select form-select-sm">
+                                        {% for status in link_statuses %}
+                                            <option value="{{ status }}" {% if status == 'Live' %}selected{% endif %}>{{ status }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small mb-1 fw-semibold">Contacts Shared</label>
+                                    <input type="number" name="contacts_shared" value="25" min="0" class="form-control form-select-sm">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small mb-1 fw-semibold">Hours Since Created</label>
+                                    <input type="number" name="hours_since_link_created" value="12.0" step="0.1" min="0" class="form-control form-select-sm">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small mb-1 fw-semibold">Device</label>
+                                    <select name="device" class="form-select form-select-sm">
+                                        {% for dev in devices %}
+                                            <option value="{{ dev }}" {% if dev == 'Android' %}selected{% endif %}>{{ dev }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small mb-1 fw-semibold">Issues (Last 30 Days)</label>
+                                    <input type="number" name="issues_last_30d" value="1" min="0" class="form-control form-select-sm">
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <input type="hidden" name="link_status" value="Live">
+                        <input type="hidden" name="contacts_shared" value="25">
+                        <input type="hidden" name="hours_since_link_created" value="12.0">
+                        <input type="hidden" name="device" value="Android">
+                        <input type="hidden" name="issues_last_30d" value="1">
+                    {% endif %}
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold shadow-sm">
+                        <i class="fa-solid fa-paper-plane me-2"></i> Submit Issue
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Creator's Submitted Issues -->
+    <div class="col-lg-7">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 fw-bold">
+                    <i class="fa-solid fa-list-check text-secondary me-2"></i> My Submitted Issues ({{ issues.count }})
+                </h5>
+                <span class="badge bg-secondary-subtle text-secondary border">Ordered by newest</span>
+            </div>
+            <div class="card-body p-0">
+                {% if issues %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light small">
+                                <tr>
+                                    <th scope="col" style="width: 15%;">Ticket #</th>
+                                    <th scope="col" style="width: 40%;">Title &amp; Description</th>
+                                    <th scope="col" style="width: 20%;">Area</th>
+                                    <th scope="col" class="text-center" style="width: 15%;">Status</th>
+                                    <th scope="col" style="width: 10%;">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for issue in issues %}
+                                    <tr>
+                                        <td class="fw-bold text-primary">
+                                            #{{ issue.id }}
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold text-dark">{{ issue.title }}</div>
+                                            {% if issue.product_name %}
+                                                <span class="badge bg-light text-muted border small">{{ issue.product_name }}</span>
+                                            {% endif %}
+                                            <div class="text-secondary small mt-1 text-truncate" style="max-width: 320px;" title="{{ issue.description }}">
+                                                {{ issue.description }}
+                                            </div>
+                                            {% if issue.manager_notes %}
+                                                <div class="mt-1 small text-success bg-success-subtle p-1 rounded">
+                                                    <i class="fa-solid fa-comment-dots me-1"></i> Care Note: {{ issue.manager_notes }}
+                                                </div>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-secondary border small">{{ issue.app_area }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="{{ issue.status_badge_class }} px-2 py-1">
+                                                {{ issue.status }}
+                                            </span>
+                                        </td>
+                                        <td class="small text-muted">
+                                            {{ issue.created_at|date:"M d, H:i" }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fa-regular fa-folder-open text-muted fs-1 mb-3"></i>
+                        <h5 class="text-secondary">No issues submitted yet</h5>
+                        <p class="text-muted small">Use the form on the left to report your issue.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Care Manager Login - App Issue Priority{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center my-5">
+    <div class="col-md-5 col-lg-4">
+        <div class="card shadow-sm border-0 border-top border-4 border-warning">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <div class="bg-warning-subtle text-warning p-3 rounded-circle d-inline-flex mb-2">
+                        <i class="fa-solid fa-user-shield fs-3"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1">Care Manager Login</h3>
+                    <p class="text-muted small">Sign in to manage AI triage, algorithms, and priority queue</p>
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Manager Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="fa-solid fa-shield-halved text-muted"></i></span>
+                            <input type="text" name="username" class="form-control" placeholder="Enter manager username" required autofocus>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold small">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="fa-solid fa-key text-muted"></i></span>
+                            <input type="password" name="password" class="form-control" placeholder="Enter manager password" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning w-100 py-2 fw-semibold mb-3 shadow-sm">
+                        <i class="fa-solid fa-lock-open me-2"></i> Sign In to Manager Portal
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

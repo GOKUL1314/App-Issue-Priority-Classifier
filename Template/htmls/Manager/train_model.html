@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}Train & Benchmark 5 ML Models - Care Manager{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Top Header -->
+    <div class="col-12">
+        <div class="card bg-white p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center">
+                <div>
+                    <h2 class="h3 fw-bold mb-1">
+                        <i class="fa-solid fa-brain text-primary me-2"></i> Machine Learning Engine &amp; 5-Model Benchmarks
+                    </h2>
+                    <p class="text-secondary mb-0">
+                        Evaluates 5 classification algorithms via 5-fold Stratified CV on training data and held-out test split.
+                    </p>
+                </div>
+                <div class="mt-3 mt-md-0">
+                    <form method="POST" class="d-inline" onsubmit="document.getElementById('trainBtn').innerHTML = '<i class=\'fa-solid fa-spinner fa-spin me-2\'></i> Retraining 5 Models...'; document.getElementById('trainBtn').disabled = true;">
+                        {% csrf_token %}
+                        <button type="submit" id="trainBtn" class="btn btn-primary px-4 py-2 shadow-sm fw-semibold">
+                            <i class="fa-solid fa-arrows-rotate me-2"></i> Retrain All 5 Algorithms
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Perfect Score Warning Alert -->
+    {% if has_perfect_score %}
+        <div class="col-12">
+            <div class="alert alert-danger d-flex align-items-center shadow-sm" role="alert">
+                <i class="fa-solid fa-triangle-exclamation fs-3 me-3"></i>
+                <div>
+                    <h5 class="alert-heading fw-bold mb-1">100% Score Warning Detected!</h5>
+                    <p class="mb-0">One or more models scored 100% accuracy or F1 score. Check the demo data generator to ensure realism and prevent overfitting.</p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Active Production Model Summary Card -->
+    <div class="col-12">
+        {% if metrics %}
+            <div class="card bg-primary-subtle border-primary-subtle shadow-sm">
+                <div class="card-body p-4">
+                    <div class="row align-items-center g-3">
+                        <div class="col-md-2 border-end border-primary-subtle">
+                            <div class="small text-primary fw-bold text-uppercase">Production Model</div>
+                            <div class="h5 fw-bold text-dark mb-0">
+                                <i class="fa-solid fa-award text-warning me-1"></i>{{ metrics.best_algorithm }}
+                            </div>
+                        </div>
+                        <div class="col-md-2 border-end border-primary-subtle">
+                            <div class="small text-primary fw-bold text-uppercase">Best Macro F1</div>
+                            <div class="h4 fw-bold text-success mb-0">{{ metrics.best_f1_score }}%</div>
+                        </div>
+                        <div class="col-md-2 border-end border-primary-subtle">
+                            <div class="small text-primary fw-bold text-uppercase">High-Priority Recall</div>
+                            <div class="h4 fw-bold text-warning-emphasis mb-0">{{ metrics.high_recall }}%</div>
+                        </div>
+                        <div class="col-md-2 border-end border-primary-subtle">
+                            <div class="small text-primary fw-bold text-uppercase">Baseline Accuracy</div>
+                            <div class="h4 fw-bold text-secondary mb-0">{{ metrics.majority_baseline_accuracy }}%</div>
+                        </div>
+                        <div class="col-md-2 border-end border-primary-subtle">
+                            <div class="small text-primary fw-bold text-uppercase">Dataset Samples</div>
+                            <div class="h5 fw-bold text-dark mb-0">
+                                {{ metrics.rows_used }} <span class="small text-muted">({{ metrics.training_samples }} train / {{ metrics.testing_samples }} test)</span>
+                            </div>
+                            <div class="small text-muted mt-1">Corrections: <strong>{{ metrics.corrections_used }}</strong></div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="small text-primary fw-bold text-uppercase">Last Trained At</div>
+                            <div class="small fw-bold text-secondary mb-0">{{ metrics.timestamp }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-warning d-flex align-items-center" role="alert">
+                <i class="fa-solid fa-triangle-exclamation fs-4 me-3"></i>
+                <div>
+                    <strong>No model artifacts found!</strong> Click the "Retrain All 5 Algorithms" button above to build and benchmark the models.
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- 5 Algorithms Comparison Table -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 fw-bold">
+                    <i class="fa-solid fa-table-list text-secondary me-2"></i> 5 ML Algorithms Benchmark Comparison
+                </h5>
+                <span class="badge bg-light text-dark border">5-Fold Stratified CV on Train + Held-Out Test</span>
+            </div>
+            <div class="card-body p-0">
+                {% if metrics and metrics.models %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light small">
+                                <tr>
+                                    <th scope="col" style="width: 28%;">Algorithm</th>
+                                    <th scope="col" class="text-center">CV Macro F1</th>
+                                    <th scope="col" class="text-center">CV High Recall</th>
+                                    <th scope="col" class="text-center">Test Accuracy</th>
+                                    <th scope="col" class="text-center">Test Macro F1</th>
+                                    <th scope="col" class="text-center">Train Time</th>
+                                    <th scope="col" class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for name, stats in metrics.models.items %}
+                                    <tr {% if name == metrics.best_algorithm %}class="table-primary fw-bold"{% endif %}>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                {% if name == metrics.best_algorithm %}
+                                                    <i class="fa-solid fa-trophy text-warning me-2"></i>
+                                                {% else %}
+                                                    <i class="fa-solid fa-microchip text-secondary me-2"></i>
+                                                {% endif %}
+                                                <span>{{ name }}</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ stats.cv_macro_f1 }}%</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-warning-subtle text-dark border border-warning-subtle">{{ stats.cv_high_recall }}%</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-light text-dark border">{{ stats.accuracy }}%</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge {% if name == metrics.best_algorithm %}bg-success{% else %}bg-secondary{% endif %}">
+                                                {{ stats.f1_score }}%
+                                            </span>
+                                        </td>
+                                        <td class="text-center small text-muted">
+                                            {{ stats.training_time_sec }}s
+                                        </td>
+                                        <td class="text-center">
+                                            {% if name == metrics.best_algorithm %}
+                                                <span class="badge bg-warning text-dark px-3 py-1">
+                                                    <i class="fa-solid fa-check-double me-1"></i> PRODUCTION MODEL
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-light text-secondary border">Evaluated</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fa-solid fa-gears text-muted fs-1 mb-3"></i>
+                        <h5>No benchmarks available yet</h5>
+                        <p class="text-muted small">Click the "Retrain All 5 Algorithms" button to trigger the training process.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Per-Class Metrics & Confusion Matrix for Best Model -->
+    {% if metrics and metrics.models %}
+        {% for name, stats in metrics.models.items %}
+            {% if name == metrics.best_algorithm %}
+                <div class="col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-white py-3">
+                            <h6 class="card-title mb-0 fw-bold">
+                                <i class="fa-solid fa-list-check text-primary me-2"></i> Per-Class Performance ({{ name }})
+                            </h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead class="table-light small">
+                                    <tr>
+                                        <th>Priority</th>
+                                        <th class="text-center">Precision</th>
+                                        <th class="text-center">Recall</th>
+                                        <th class="text-center">F1-Score</th>
+                                        <th class="text-center">Support</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cls_name, cls_stats in stats.per_class.items %}
+                                        <tr>
+                                            <td>
+                                                <span class="badge {% if cls_name == 'High' %}bg-warning text-dark{% elif cls_name == 'Medium' %}bg-info text-dark{% else %}bg-secondary{% endif %} px-2 py-1">
+                                                    {{ cls_name }}
+                                                </span>
+                                            </td>
+                                            <td class="text-center">{{ cls_stats.precision }}%</td>
+                                            <td class="text-center fw-bold">{{ cls_stats.recall }}%</td>
+                                            <td class="text-center">{{ cls_stats.f1_score }}%</td>
+                                            <td class="text-center text-muted">{{ cls_stats.support }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-white py-3">
+                            <h6 class="card-title mb-0 fw-bold">
+                                <i class="fa-solid fa-border-all text-secondary me-2"></i> Confusion Matrix (Held-out Test Set)
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered text-center align-middle mb-0 small">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Actual \ Pred</th>
+                                            {% for lbl in stats.confusion_matrix_labels %}
+                                                <th>{{ lbl }}</th>
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for row in stats.confusion_matrix %}
+                                            <tr>
+                                                <th class="table-light">{{ stats.confusion_matrix_labels|slice:forloop.counter|last }}</th>
+                                                {% for cell in row %}
+                                                    <td {% if forloop.counter == forloop.parentloop.counter %}class="table-success fw-bold"{% endif %}>
+                                                        {{ cell }}
+                                                    </td>
+                                                {% endfor %}
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="small text-muted mt-2 text-center">Rows: True label | Columns: Predicted label</div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+
+    <!-- Architecture & Platform Guardrails Info Box -->
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-3">
+                <h6 class="card-title mb-0 fw-bold">
+                    <i class="fa-solid fa-diagram-project text-primary me-2"></i> ML Pipeline Architecture
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-font me-2 text-secondary"></i> Text Feature:</span>
+                        <strong class="font-monospace">TfidfVectorizer (1-2 ngrams, sublinear_tf)</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-tags me-2 text-secondary"></i> Categorical Features:</span>
+                        <strong class="font-monospace">OneHotEncoder (app_area, link_status, device)</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-calculator me-2 text-secondary"></i> Numeric Features:</span>
+                        <strong class="font-monospace">MinMaxScaler (contacts, hours, past_issues)</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-floppy-disk me-2 text-secondary"></i> Production Storage:</span>
+                        <strong class="font-monospace">joblib (priority_model.joblib)</strong>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-3">
+                <h6 class="card-title mb-0 fw-bold">
+                    <i class="fa-solid fa-shield-halved text-warning me-2"></i> Platform Rules (Can Only RAISE)
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item">
+                        <strong class="text-warning-emphasis">Rule A - Live Product Link Broken:</strong>
+                        <p class="text-muted mb-0">When app area is "Product Link", link status is "Live", contacts shared &gt;= 1, and text indicates link not opening / 404 / error, priority is raised to <span class="badge bg-warning text-dark">High</span>.</p>
+                    </li>
+                    <li class="list-group-item">
+                        <strong class="text-danger">Rule B - Account Security &amp; Data Loss:</strong>
+                        <p class="text-muted mb-0">When text describes cannot log in, account locked, hacked, someone else in account, or products/data lost, priority is raised to <span class="badge bg-warning text-dark">High</span>.</p>
+                    </li>
+                    <li class="list-group-item">
+                        <strong class="text-secondary">Strict Guardrail Invariant:</strong>
+                        <p class="text-muted mb-0">Rules may only RAISE a priority, never lower it. Cosmetic downgrade rules have been completely removed.</p>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

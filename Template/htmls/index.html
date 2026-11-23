@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}App Issue Priority Triage & Resolution System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center my-4">
+    <div class="col-lg-10">
+        <!-- Hero Banner -->
+        <div class="p-5 mb-4 bg-white rounded-3 shadow-sm border border-light-subtle text-center">
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-semibold mb-3">
+                <i class="fa-solid fa-microchip me-1"></i> Multi-Algorithm AI Triage &amp; Platform Rules
+            </span>
+            <h1 class="display-5 fw-bold text-dark mb-3">Automated App Issue Priority Triage</h1>
+            <p class="lead text-secondary mx-auto col-lg-9 mb-4">
+                Prioritize platform issues with 3 urgency levels (High, Medium, Low) using NLP and 5-model Machine Learning with integrated safety rules.
+            </p>
+            <div class="d-flex justify-content-center gap-3">
+                <a href="{% url 'customer_care' %}" class="btn btn-primary btn-lg px-4 gap-3 shadow-sm">
+                    <i class="fa-solid fa-headset me-2"></i> Creator Customer Care
+                </a>
+                <a href="{% url 'manager_issues' %}" class="btn btn-warning btn-lg px-4 gap-3 shadow-sm fw-semibold">
+                    <i class="fa-solid fa-shield-halved me-2"></i> Care Manager Portal
+                </a>
+            </div>
+        </div>
+
+        <!-- 2 Main Portals Grid -->
+        <div class="row g-4 mb-4">
+            <!-- Creator Portal Card -->
+            <div class="col-md-6">
+                <div class="card h-100 shadow-sm border-0 border-top border-4 border-primary">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-primary-subtle text-primary p-3 rounded-circle me-3">
+                                <i class="fa-solid fa-user-astronaut fs-3"></i>
+                            </div>
+                            <div>
+                                <h3 class="h4 card-title mb-0 fw-bold">Creator Portal</h3>
+                                <small class="text-muted">Issue Reporting &amp; Status Tracking</small>
+                            </div>
+                        </div>
+                        <p class="card-text text-secondary mb-4">
+                            Report issues with product links, store builder styling, login problems, image uploads, or bargain button features.
+                        </p>
+                        <ul class="list-unstyled text-secondary small mb-4">
+                            <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> Straightforward issue submission with ticket tracking</li>
+                            <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> Context auto-filled in production platform</li>
+                            <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> Real-time status tracker for submitted tickets</li>
+                        </ul>
+                        <div class="mt-auto d-flex gap-2">
+                            {% if request.session.creator_id %}
+                                <a href="{% url 'customer_care' %}" class="btn btn-primary w-100">
+                                    <i class="fa-solid fa-arrow-right me-1"></i> Open Customer Care
+                                </a>
+                            {% else %}
+                                <a href="{% url 'creator_login' %}" class="btn btn-outline-primary w-50">Login</a>
+                                <a href="{% url 'creator_register' %}" class="btn btn-primary w-50">Register</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Care Manager Portal Card -->
+            <div class="col-md-6">
+                <div class="card h-100 shadow-sm border-0 border-top border-4 border-warning">
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-warning-subtle text-warning p-3 rounded-circle me-3">
+                                <i class="fa-solid fa-user-shield fs-3"></i>
+                            </div>
+                            <div>
+                                <h3 class="h4 card-title mb-0 fw-bold">Care Manager Portal</h3>
+                                <small class="text-muted">AI Model Governance, Analytics &amp; Triage</small>
+                            </div>
+                        </div>
+                        <p class="card-text text-secondary mb-4">
+                            Triage issues in ranked order (High &gt; Medium &gt; Low, oldest waiting first), train and compare 5 machine learning algorithms, review analytics charts, and export data.
+                        </p>
+                        <ul class="list-unstyled text-secondary small mb-4">
+                            <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> Ranked priority queue with priority correction and waiting timer</li>
+                            <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> Train 5 ML algorithms with manager correction feedback loops</li>
+                            <li class="mb-2"><i class="fa-solid fa-check text-success me-2"></i> Analytics charts with manager agreement rate &amp; CSV export</li>
+                        </ul>
+                        <div class="mt-auto d-flex gap-2">
+                            <a href="{% url 'manager_issues' %}" class="btn btn-warning w-100 fw-semibold">
+                                <i class="fa-solid fa-shield-halved me-1"></i> Access Manager Portal
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3 Architecture & Capabilities Highlights -->
+        <div class="row g-3 text-center">
+            <div class="col-md-4">
+                <div class="p-4 bg-white rounded-3 border">
+                    <i class="fa-solid fa-brain fs-2 text-primary mb-2"></i>
+                    <h5 class="fw-bold">5 Trained Algorithms</h5>
+                    <p class="text-muted small mb-0">Compares Logistic Regression, Naive Bayes, Random Forest, Linear SVC, and Decision Tree pipelines.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-4 bg-white rounded-3 border">
+                    <i class="fa-solid fa-shield-halved fs-2 text-warning mb-2"></i>
+                    <h5 class="fw-bold">Platform Safety Rules</h5>
+                    <p class="text-muted small mb-0">Platform rules automatically escalate broken live links and compromised accounts to High priority.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-4 bg-white rounded-3 border">
+                    <i class="fa-solid fa-file-csv fs-2 text-success mb-2"></i>
+                    <h5 class="fw-bold">Prioritized Export</h5>
+                    <p class="text-muted small mb-0">Filter issues and export complete diagnostic reports protected against CSV formula injection.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

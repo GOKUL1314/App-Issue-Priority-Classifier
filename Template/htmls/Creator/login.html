@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Creator Login - App Issue Priority{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center my-5">
+    <div class="col-md-5 col-lg-4">
+        <div class="card shadow-sm border-0 border-top border-4 border-primary">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <div class="bg-primary-subtle text-primary p-3 rounded-circle d-inline-flex mb-2">
+                        <i class="fa-solid fa-user-astronaut fs-3"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1">Creator Login</h3>
+                    <p class="text-muted small">Sign in to report issues and track resolutions</p>
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="fa-solid fa-user text-muted"></i></span>
+                            <input type="text" name="username" class="form-control" placeholder="Enter creator username" required autofocus>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold small">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="fa-solid fa-lock text-muted"></i></span>
+                            <input type="password" name="password" class="form-control" placeholder="Enter password" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold mb-3 shadow-sm">
+                        <i class="fa-solid fa-right-to-bracket me-2"></i> Sign In as Creator
+                    </button>
+                </form>
+
+                <div class="text-center pt-2 border-top">
+                    <span class="text-muted small">Don't have a Creator account?</span>
+                    <a href="{% url 'creator_register' %}" class="fw-semibold text-primary small ms-1">Register here</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

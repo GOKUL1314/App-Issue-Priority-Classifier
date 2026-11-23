@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics & Charts - Care Manager{% endblock %}
+
+{% block extra_head %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Top Header -->
+    <div class="col-12">
+        <div class="card bg-white p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center">
+                <div>
+                    <h2 class="h3 fw-bold mb-1">
+                        <i class="fa-solid fa-chart-pie text-success me-2"></i> Issue Analytics &amp; ML Benchmarks Dashboard
+                    </h2>
+                    <p class="text-secondary mb-0">
+                        Real-time visualization of platform issue triage patterns, priority distribution, and manager agreement metrics.
+                    </p>
+                </div>
+                <div class="d-flex gap-2 mt-3 mt-md-0">
+                    <a href="{% url 'manager_issues' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fa-solid fa-list-check me-1"></i> View Issues Queue
+                    </a>
+                    <a href="{% url 'manager_export' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fa-solid fa-file-csv me-1"></i> Export Data
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manager Agreement Banner Card -->
+    <div class="col-12">
+        <div class="card bg-success-subtle border-success-subtle shadow-sm">
+            <div class="card-body p-4">
+                <div class="row align-items-center g-3">
+                    <div class="col-md-3 border-end border-success-subtle">
+                        <div class="small text-success fw-bold text-uppercase">Manager Agreement Rate</div>
+                        <div class="h3 fw-bold text-success mb-0">
+                            <i class="fa-solid fa-handshake me-2"></i>{{ agreement_pct }}%
+                        </div>
+                    </div>
+                    <div class="col-md-4 border-end border-success-subtle">
+                        <div class="small text-success fw-bold text-uppercase">Agreement Count</div>
+                        <div class="h5 fw-bold text-dark mb-0">
+                            {{ agreement_count }} of {{ total_issues }} issues
+                        </div>
+                        <small class="text-muted">Final priority matches AI model prediction</small>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="small text-success fw-bold text-uppercase">Model Feedback Loop</div>
+                        <p class="small text-secondary mb-0">
+                            When care managers override a priority, the corrected issue is stored and automatically included as human feedback in the next model retraining.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4 Charts Grid -->
+    <!-- Chart 1: Priority Distribution Donut -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 fw-bold">
+                    <i class="fa-solid fa-triangle-exclamation text-warning me-2"></i> Priority Distribution (3 Tiers)
+                </h5>
+                <span class="badge bg-light text-dark border">High / Medium / Low</span>
+            </div>
+            <div class="card-body d-flex justify-content-center align-items-center p-4" style="position: relative; height: 320px;">
+                <canvas id="priorityChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart 2: Issues by App Area Bar -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 fw-bold">
+                    <i class="fa-solid fa-cubes text-primary me-2"></i> Issues by Platform Area
+                </h5>
+                <span class="badge bg-light text-dark border">6 Areas</span>
+            </div>
+            <div class="card-body p-4" style="position: relative; height: 320px;">
+                <canvas id="areaChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart 3: Issues by Status Pie -->
+    <div class="col-lg-5">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 fw-bold">
+                    <i class="fa-solid fa-spinner text-info me-2"></i> Resolution Workflow Status
+                </h5>
+                <span class="badge bg-light text-dark border">Lifecycle</span>
+            </div>
+            <div class="card-body d-flex justify-content-center align-items-center p-4" style="position: relative; height: 320px;">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart 4: ML Models Accuracy & F1 Grouped Bar -->
+    <div class="col-lg-7">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 fw-bold">
+                    <i class="fa-solid fa-brain text-warning me-2"></i> 5 ML Algorithms Benchmark Comparison
+                </h5>
+                <span class="badge bg-success-subtle text-success border border-success-subtle">
+                    Best: {{ best_algo }}
+                </span>
+            </div>
+            <div class="card-body p-4" style="position: relative; height: 320px;">
+                <canvas id="mlCompareChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Priority Chart (3 Tiers: High, Medium, Low)
+    const priorityLabels = {{ priority_labels_json|safe }};
+    const priorityData = {{ priority_data_json|safe }};
+    const ctxPriority = document.getElementById('priorityChart').getContext('2d');
+    new Chart(ctxPriority, {
+        type: 'doughnut',
+        data: {
+            labels: priorityLabels,
+            datasets: [{
+                data: priorityData,
+                backgroundColor: ['#f59e0b', '#3b82f6', '#64748b'],
+                hoverOffset: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+
+    // App Area Chart
+    const areaLabels = {{ area_labels_json|safe }};
+    const areaData = {{ area_data_json|safe }};
+    const ctxArea = document.getElementById('areaChart').getContext('2d');
+    new Chart(ctxArea, {
+        type: 'bar',
+        data: {
+            labels: areaLabels,
+            datasets: [{
+                label: 'Issues Count',
+                data: areaData,
+                backgroundColor: '#3b82f6',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: { beginAtZero: true, ticks: { precision: 0 } }
+            }
+        }
+    });
+
+    // Status Chart
+    const statusLabels = {{ status_labels_json|safe }};
+    const statusData = {{ status_data_json|safe }};
+    const ctxStatus = document.getElementById('statusChart').getContext('2d');
+    new Chart(ctxStatus, {
+        type: 'pie',
+        data: {
+            labels: statusLabels,
+            datasets: [{
+                data: statusData,
+                backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#10b981'],
+                hoverOffset: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+
+    // ML Compare Chart
+    const modelNames = {{ model_names_json|safe }};
+    const accuracies = {{ accuracies_json|safe }};
+    const f1Scores = {{ f1_scores_json|safe }};
+    const ctxML = document.getElementById('mlCompareChart').getContext('2d');
+    new Chart(ctxML, {
+        type: 'bar',
+        data: {
+            labels: modelNames,
+            datasets: [
+                {
+                    label: 'Accuracy (%)',
+                    data: accuracies,
+                    backgroundColor: '#6366f1',
+                    borderRadius: 4
+                },
+                {
+                    label: 'F1 Score (%)',
+                    data: f1Scores,
+                    backgroundColor: '#10b981',
+                    borderRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: { callback: v => v + '%' }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

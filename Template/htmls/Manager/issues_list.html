@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}Prioritized Issue Queue - Care Manager{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Top Summary & Stats -->
+    <div class="col-12">
+        <div class="card bg-white p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center">
+                <div>
+                    <h2 class="h3 fw-bold mb-1">
+                        <i class="fa-solid fa-list-check text-primary me-2"></i> Prioritized Issue Queue
+                    </h2>
+                    <p class="text-secondary mb-0">
+                        Issues ranked strictly by urgency (High &gt; Medium &gt; Low) and oldest waiting first.
+                    </p>
+                </div>
+                <div class="d-flex flex-wrap gap-2 mt-3 mt-md-0">
+                    <div class="border rounded px-3 py-2 text-center bg-light">
+                        <div class="small text-muted">Total Issues</div>
+                        <div class="h5 fw-bold mb-0 text-dark">{{ total_count }}</div>
+                    </div>
+                    <div class="border rounded px-3 py-2 text-center bg-warning-subtle border-warning-subtle">
+                        <div class="small text-warning-emphasis fw-bold">High Priority</div>
+                        <div class="h5 fw-bold mb-0 text-warning-emphasis">{{ high_count }}</div>
+                    </div>
+                    <div class="border rounded px-3 py-2 text-center bg-info-subtle border-info-subtle">
+                        <div class="small text-info-emphasis fw-bold">Medium</div>
+                        <div class="h5 fw-bold mb-0 text-info-emphasis">{{ medium_count }}</div>
+                    </div>
+                    <div class="border rounded px-3 py-2 text-center bg-secondary-subtle border-secondary-subtle">
+                        <div class="small text-secondary fw-bold">Low</div>
+                        <div class="h5 fw-bold mb-0 text-secondary">{{ low_count }}</div>
+                    </div>
+                    <div class="border rounded px-3 py-2 text-center bg-light">
+                        <div class="small text-muted">Open</div>
+                        <div class="h5 fw-bold mb-0 text-danger">{{ open_count }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="col-12">
+        <div class="card p-3 shadow-sm">
+            <form method="GET" class="row g-2 align-items-center">
+                <!-- Search query -->
+                <div class="col-md-3">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                        <input type="text" name="q" value="{{ search_query }}" class="form-control" placeholder="Search title, description, user...">
+                    </div>
+                </div>
+
+                <!-- Priority Filter -->
+                <div class="col-md-2">
+                    <select name="priority" class="form-select form-select-sm">
+                        <option value="">All Priorities</option>
+                        {% for p in priorities %}
+                            <option value="{{ p }}" {% if selected_priority == p %}selected{% endif %}>{{ p }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- App Area Filter -->
+                <div class="col-md-3">
+                    <select name="app_area" class="form-select form-select-sm">
+                        <option value="">All App Areas</option>
+                        {% for area in app_areas %}
+                            <option value="{{ area }}" {% if selected_area == area %}selected{% endif %}>{{ area }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Status Filter -->
+                <div class="col-md-2">
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">Unresolved Only (Default)</option>
+                        {% for s in statuses %}
+                            <option value="{{ s }}" {% if selected_status == s %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="col-md-2 d-flex gap-1 justify-content-end">
+                    <button type="submit" class="btn btn-primary btn-sm px-3">
+                        <i class="fa-solid fa-filter me-1"></i> Filter
+                    </button>
+                    {% if selected_priority or selected_area or selected_status or search_query %}
+                        <a href="{% url 'manager_issues' %}" class="btn btn-outline-secondary btn-sm" title="Clear filters">
+                            <i class="fa-solid fa-xmark"></i>
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'manager_export' %}?priority={{ selected_priority }}&app_area={{ selected_area }}&status={{ selected_status }}&q={{ search_query }}" class="btn btn-success btn-sm px-3 text-nowrap" title="Export current list to CSV">
+                        <i class="fa-solid fa-file-csv me-1"></i> Export
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Prioritized Issues Queue Table -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 fw-bold">
+                    <i class="fa-solid fa-layer-group text-primary me-2"></i> Ranked Queue ({{ issues|length }} issues)
+                </h5>
+                <span class="badge bg-light text-secondary border">Priority Order: High &gt; Medium &gt; Low | Oldest Waiting First</span>
+            </div>
+            <div class="card-body p-0">
+                {% if issues %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light small">
+                                <tr>
+                                    <th scope="col" style="width: 100px;" class="text-center">Priority</th>
+                                    <th scope="col" style="width: 90px;" class="text-center">Waiting</th>
+                                    <th scope="col" style="width: 30%;">Issue &amp; Product</th>
+                                    <th scope="col" style="width: 15%;">Link &amp; Context</th>
+                                    <th scope="col" style="width: 14%;">Creator</th>
+                                    <th scope="col" style="width: 14%;">Diagnosis</th>
+                                    <th scope="col" style="width: 8%;" class="text-center">Status</th>
+                                    <th scope="col" style="width: 9%;" class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for issue in issues %}
+                                    <tr {% if issue.final_priority == 'High' and issue.status != 'Resolved' %}class="table-warning-subtle"{% endif %}>
+                                        <!-- Priority Column -->
+                                        <td class="text-center">
+                                            <span class="{{ issue.priority_badge_class }} px-3 py-1 fw-semibold">
+                                                {{ issue.final_priority }}
+                                            </span>
+                                            {% if issue.priority_source == 'manager' %}
+                                                <div class="small text-primary mt-1" title="Manually corrected by Care Manager">
+                                                    <i class="fa-solid fa-user-pen"></i> Manager
+                                                </div>
+                                            {% elif issue.priority_source == 'rule' %}
+                                                <div class="small text-danger mt-1" title="{{ issue.rule_name }}">
+                                                    <i class="fa-solid fa-shield-halved"></i> Rule
+                                                </div>
+                                            {% elif issue.priority_source == 'rules_only' %}
+                                                <div class="small text-secondary mt-1" title="Rules-only fallback (no ML model)">
+                                                    <i class="fa-solid fa-gears"></i> Rules Only
+                                                </div>
+                                            {% else %}
+                                                <div class="small text-muted mt-1">
+                                                    <i class="fa-solid fa-brain"></i> Model
+                                                </div>
+                                            {% endif %}
+                                        </td>
+
+                                        <!-- Waiting Column -->
+                                        <td class="text-center">
+                                            <span class="badge bg-light text-dark border font-monospace">
+                                                {{ issue.waiting_time }}
+                                            </span>
+                                        </td>
+
+                                        <!-- Issue Details Column -->
+                                        <td>
+                                            <div class="fw-bold text-dark">#{{ issue.id }} - {{ issue.title }}</div>
+                                            <div class="mt-1">
+                                                <span class="badge bg-light text-dark border small me-1">{{ issue.app_area }}</span>
+                                                {% if issue.product_name %}
+                                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle small">{{ issue.product_name }}</span>
+                                                {% endif %}
+                                                <span class="small text-muted ms-1">{{ issue.created_at|date:"M d, H:i" }}</span>
+                                            </div>
+                                            <div class="text-secondary small mt-1" style="max-width: 380px;">
+                                                {{ issue.description }}
+                                            </div>
+                                            {% if issue.manager_notes %}
+                                                <div class="mt-1 small text-primary bg-primary-subtle p-1 rounded">
+                                                    <i class="fa-solid fa-note-sticky me-1"></i> Care Note: {{ issue.manager_notes }}
+                                                </div>
+                                            {% endif %}
+                                        </td>
+
+                                        <!-- Link & Context Column -->
+                                        <td>
+                                            <div class="small">
+                                                <span class="text-muted">Link:</span>
+                                                <span class="badge {% if issue.link_status == 'Live' %}bg-success{% elif issue.link_status == 'Draft' %}bg-warning text-dark{% else %}bg-secondary{% endif %} py-0 px-2">
+                                                    {{ issue.link_status }}
+                                                </span>
+                                            </div>
+                                            <div class="small mt-1">
+                                                <span class="text-muted">Contacts Shared:</span> <strong>{{ issue.contacts_shared }}</strong>
+                                            </div>
+                                            <div class="small text-muted">
+                                                Device: {{ issue.device }} | Past 30d: {{ issue.issues_last_30d }}
+                                            </div>
+                                        </td>
+
+                                        <!-- Creator Column -->
+                                        <td>
+                                            {% if issue.creator %}
+                                                <div class="fw-semibold text-dark">{{ issue.creator.full_name }}</div>
+                                                <div class="small text-muted">@{{ issue.creator.username }}</div>
+                                                {% if issue.creator.channel_or_app_name %}
+                                                    <span class="badge bg-light text-secondary border small">{{ issue.creator.channel_or_app_name }}</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted small">Anonymous</span>
+                                            {% endif %}
+                                        </td>
+
+                                        <!-- Diagnosis Column -->
+                                        <td>
+                                            <div class="small text-muted">
+                                                ML Pred: <strong>{{ issue.predicted_priority }}</strong>
+                                            </div>
+                                            <div class="small text-muted">
+                                                Confidence: <strong>{{ issue.confidence }}%</strong>
+                                            </div>
+                                            <div class="small text-truncate text-muted mt-1" style="max-width: 160px;" title="Source: {{ issue.priority_source }} | Rule: {{ issue.rule_name }}">
+                                                Source: <span class="fw-semibold">{{ issue.priority_source }}</span>
+                                            </div>
+                                        </td>
+
+                                        <!-- Status Column -->
+                                        <td class="text-center">
+                                            <span class="{{ issue.status_badge_class }} px-2 py-1">
+                                                {{ issue.status }}
+                                            </span>
+                                        </td>
+
+                                        <!-- Action Column -->
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-outline-primary btn-sm px-2" data-bs-toggle="modal" data-bs-target="#updateModal{{ issue.id }}">
+                                                <i class="fa-solid fa-pen-to-square me-1"></i> Update
+                                            </button>
+
+                                            <!-- Modal for updating issue -->
+                                            <div class="modal fade text-start" id="updateModal{{ issue.id }}" tabindex="-1">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <form method="POST" action="{% url 'update_issue_status' issue.id %}">
+                                                            {% csrf_token %}
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title fw-bold">Update Issue #{{ issue.id }}</h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <p class="mb-2"><strong>Title:</strong> {{ issue.title }}</p>
+                                                                <p class="mb-2"><strong>ML Predicted Priority:</strong> <span class="badge bg-light text-dark border">{{ issue.predicted_priority }}</span> ({{ issue.confidence }}%)</p>
+
+                                                                <!-- Final Priority Dropdown -->
+                                                                <div class="mb-3">
+                                                                    <label class="form-label fw-semibold small">Priority Level</label>
+                                                                    <select name="final_priority" class="form-select">
+                                                                        {% for p in priorities %}
+                                                                            <option value="{{ p }}" {% if issue.final_priority == p %}selected{% endif %}>{{ p }}</option>
+                                                                        {% endfor %}
+                                                                    </select>
+                                                                    <div class="form-text small text-muted">Changing priority records a manager correction for AI retraining.</div>
+                                                                </div>
+
+                                                                <!-- Status Dropdown -->
+                                                                <div class="mb-3">
+                                                                    <label class="form-label fw-semibold small">Workflow Status</label>
+                                                                    <select name="status" class="form-select">
+                                                                        {% for s in statuses %}
+                                                                            <option value="{{ s }}" {% if issue.status == s %}selected{% endif %}>{{ s }}</option>
+                                                                        {% endfor %}
+                                                                    </select>
+                                                                </div>
+
+                                                                <div class="mb-3">
+                                                                    <label class="form-label fw-semibold small">Manager Notes / Resolution Update</label>
+                                                                    <textarea name="manager_notes" class="form-control" rows="3" placeholder="Add resolution progress or internal notes...">{{ issue.manager_notes }}</textarea>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                                                <button type="submit" class="btn btn-primary btn-sm px-3">Save Changes</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fa-regular fa-circle-check text-success fs-1 mb-3"></i>
+                        <h5>No open issues matching filters</h5>
+                        <p class="text-muted small">Resolved issues are hidden by default unless 'Resolved' is selected in the status filter.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

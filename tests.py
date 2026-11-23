@@ -1,0 +1,1 @@
+from Care_Manager_Portal.tests import IssuePriorityPlatformTests
